@@ -73,19 +73,21 @@ int main(int argc, char * argv[]) {
     //Another option would be AF_INET6, which stands for ipv6 network
     sa.sin_port = htons(server_port);
     //set the address for sa.
-    if (inet_pton(AF_INET,hostentry->h_addr, &sa.sin_addr.s_addr)<=0){
-        fprintf(stderr, "Can't set remote->sin_addr.s_addr. %s is not a valid IP address\n",hostentry->h_addr);
-        exit(-1);
-    }
+    memcpy(&(sa.sin_addr.s_addr),hostentry->h_addr,hostentry->h_length);
+    //    fprintf(stderr, "Can't set remote->sin_addr. %s is not a valid IP address\n",hostentry->h_addr);
+	//fprintf(stderr, "%s\n",hostentry->h_addr_list[0]);
+	//fprintf(stderr, "%s\n",hostentry->h_name);
+        //exit(-1);
+    //}
     /* connect socket */
 
     // Connect to a remote socket.
     // the IP address (AF_INET) and port are specified in myaddr.
     // The sockfd argument is a file descriptor that refers to a socket of
     // type SOCK_STREAM or SOCK_SEQPACKET.
-    minet_bind (SOCK_STREAM,sa);
-    if(minet_connect(sock, sa) < 0){
-        fprintf("Could not connect to socket");
+    minet_bind (SOCK_STREAM,&sa);
+    if(minet_connect(sock, &sa) < 0){
+        fprintf(stderr,"Could not connect to socket");
         exit(-1);
     }
     /* send request */
@@ -102,24 +104,20 @@ int main(int argc, char * argv[]) {
     memset(buf, 0, sizeof(buf));
       int htmlstart = 0;
       char * htmlcontent;
-    while((rc = recv(sock, buf, BUFSIZ, 0)) > 0){
-    if(htmlstart == 0)
-    {
-      /* Under certain conditions this will not work.
-      * If the \r\n\r\n part is splitted into two messages
-      * it will fail to detect the beginning of HTML content
-      */
-      htmlcontent = strstr(buf, "\r\n\r\n");
-      if(htmlcontent != NULL){
-        htmlstart = 1;
-        htmlcontent += 4;
-      }
-    }else{
+    while((rc = minet_recvfrom(sock, buf, BUFSIZE, &sa)) > 0){
+    //if(htmlstart == 0)
+    //{
+    //  htmlcontent = strstr(buf, "HTTP");
+    //  if(htmlcontent != NULL){
+    //    htmlstart = 1;
+    //    htmlcontent += 4;
+    //  }
+    //}else{
       htmlcontent = buf;
-    }
-    if(htmlstart){
+    //}
+    //if(htmlstart){
       fprintf(stdout, htmlcontent);
-    }
+    //}
 
         memset(buf, 0, rc);
     }
@@ -167,9 +165,9 @@ char *build_get_query(char *host, char *page){
     // Useful little function
     // modified from http://coding.debuntu.org/c-linux-socket-programming-tcp-simple-http-client
     char* query;
-    char *tpl = "GET /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: %s\r\n\r\n";
-    // -5 is to consider the %s %s %s in tpl and the ending \0
-    query = (char *)malloc(strlen(host)+strlen(page)+strlen(USERAGENT)+strlen(tpl)-5);
-    sprintf(query, tpl, page, host, USERAGENT);
+    char *tpl = "GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n";
+    // -5 is to consider the %s %s in tpl and the ending \0
+    query = (char *)malloc(strlen(host)+strlen(page)+strlen(tpl)-3);
+    sprintf(query, tpl, page, host);
     return query;
 }
