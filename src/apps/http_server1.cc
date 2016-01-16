@@ -17,6 +17,7 @@ int main(int argc,char *argv[])
   int sock,sock2;
   struct sockaddr_in sa,sa2;
   int rc;
+  int backlog=???; //Set backlog to whatever number of waiting connections you want in the server.
 
   /* parse command line args */
   if (argc != 3)
@@ -32,13 +33,36 @@ int main(int argc,char *argv[])
   }
 
   /* initialize and make socket */
+  if (toupper(*(argv[1])) == 'K') { 
+  minet_init(MINET_KERNEL);
+  } else if (toupper(*(argv[1])) == 'U') { 
+  minet_init(MINET_USER);
+  } else {
+  fprintf(stderr, "First argument must be k or u\n");
+  exit(-1);
+  }
+
+  /* create socket */
+  // Type must be SOCK_STREAM (TCP)
+  // or SOCK_DGRAM (UDP)
+  // or SOCK_ICMP (ICMP)
+  sock=minet_socket (SOCK_STREAM);
 
   /* set server address*/
+  // Specify ip address (AF_INET) and port for struct sockaddr_in sa;
+  sa.sin_family = AF_INET; //AF_INET means that src points to a character string containing an IPv4 network address in dotted-decimal format, "ddd.ddd.ddd.ddd"
+  //Another option would be AF_INET6, which stands for ipv6 network
+  sa.sin_port = htons(server_port);
+  //set the address for sa. let the program automatically select an IP address:
+  sa.sin_addr.s_addr = INADDR_ANY;
 
   /* bind listening socket */
+  // The sockfd argument is a file descriptor that refers to a socket of
+  // type SOCK_STREAM or SOCK_SEQPACKET.
+  minet_bind (SOCK_STREAM,&sa);
 
   /* start listening */
-
+  minet_listen(sock,backlog);
   /* connection handling loop */
   while(1)
   {
