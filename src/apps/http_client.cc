@@ -81,7 +81,7 @@ int main(int argc, char * argv[]) {
 	// the IP address (AF_INET) and port are specified in myaddr.
 	// The sockfd argument is a file descriptor that refers to a socket of
 	// type SOCK_STREAM or SOCK_SEQPACKET.
-	minet_bind (SOCK_STREAM,&sa);
+	minet_bind (sock,&sa);
 	if(minet_connect(sock, &sa) < 0){
 		fprintf(stderr,"Could not connect to socket");
 		exit(-1);
