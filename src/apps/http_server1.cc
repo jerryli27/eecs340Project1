@@ -72,7 +72,7 @@ int main(int argc,char *argv[])
   /* bind listening socket */
   // The sockfd argument is a file descriptor that refers to a socket of
   // type SOCK_STREAM or SOCK_SEQPACKET.
-  minet_bind (SOCK_STREAM,&sa); 
+  minet_bind (sock1,&sa); 
   /**
    * TODO @@@@@@@@@@@ ATTENTION @@@@@@@@@@@
    * I think this one above should be 'sock', instead of 'SOCK_STREAM'

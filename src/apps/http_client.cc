@@ -102,32 +102,40 @@ int main(int argc, char * argv[]) {
 	//remove the '\0'
 	// Normal reply has return code 200
 	memset(buf, 0, sizeof(buf));
-		int htmlstart = 0;
+		int htmlheaderstart = 0, htmlheaderend=0;
 		char * htmlcontent;
 	while((rc = minet_recvfrom(sock, buf, BUFSIZE, &sa)) > 0){
-	//Not implementing the skip HTTP/1.0 part. Don't see the reason to do so.
-	//if(htmlstart == 0)
-	//{
-	//	htmlcontent = strstr(buf, "HTTP");
-	//	if(htmlcontent != NULL){
-	//	htmlstart = 1;
-	//	htmlcontent += 4;
-	//	}
-	//}else{
-		htmlcontent = buf;
-	//}
-	//if(htmlstart){
-		fprintf(stdout, htmlcontent);
-	//}
-
+        /* print first part of response */
+    	if(htmlheaderstart == 0)
+    	{
+    		htmlcontent = strstr(buf, "\r\n");// header is after this token
+    		if(htmlcontent != NULL){
+        		htmlheaderstart = 1;
+        		htmlcontent += 2;// +2 because header is after this \r\n token
+                fprintf(stdout, "Header is: \n");
+            }
+    	}else if (htmlheaderend==0){
+            htmlcontent = strstr(buf, "\r\n\r\n");// the end of headers is the end of string
+            if(htmlcontent != NULL){
+                htmlheaderend = 1;
+                htmlcontent += 4;// +4 so the end of headers is the end of string \r\n\r\n
+                fprintf(stdout, "Content is: \n");
+            }
+        }
+        else{
+    		htmlcontent = buf;
+    	}
+    	if(htmlheaderstart){
+    		fprintf(stdout, htmlcontent);
+    	}
 		memset(buf, 0, rc);
 	}
 	if(rc < 0)
 	{
-	perror("Error receiving data");
+	   perror("Error receiving data");
 	}
 
-	/* print first part of response */
+	
 
 	/* second read loop -- print out the rest of the response */
 	//Also can't see the reason to separate the first and second part of the response.
