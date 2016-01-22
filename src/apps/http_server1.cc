@@ -184,7 +184,7 @@ int handle_connection(int sock2)
   memset(filename, '\0', sizeof(filename));
   memset(filecontent, '\0', sizeof(filecontent));
 
-  addresslength = strstr(buf + 5, ' ') - 5;
+  addresslength = strstr(buf + 5, " ") - 5;
   memcpy(filename, buf, addresslength);
   filename[addresslength] = '\0';
 
