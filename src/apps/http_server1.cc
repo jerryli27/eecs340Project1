@@ -72,7 +72,7 @@ int main(int argc,char *argv[])
   /* bind listening socket */
   // The sockfd argument is a file descriptor that refers to a socket of
   // type SOCK_STREAM or SOCK_SEQPACKET.
-  minet_bind (sock1,&sa); 
+  minet_bind (sock,&sa); 
   /**
    * TODO @@@@@@@@@@@ ATTENTION @@@@@@@@@@@
    * I think this one above should be 'sock', instead of 'SOCK_STREAM'
@@ -147,8 +147,7 @@ int handle_connection(int sock2)
                          "<h2>404 FILE NOT FOUND</h2>\n"
                          "</body></html>\n";
   bool ok=true;
-  bool headerFound = false;
-  bool headerEndFound = false;
+
 
 
 
@@ -171,8 +170,8 @@ int handle_connection(int sock2)
 
   // I'll use bptr to denote the start of file address
   bptr = buf + 5;
-  headers = buf + buf.find("\r\n") + 2; // +2 because header is after this token
-  endheaders = buf + buf.find("\r\n\r\n") + 4; // +4 so the end of headers is the end of string
+  headers = strstr(buf, "\r\n") + 2; // +2 because header is after this token
+  endheaders = strstr(buf, "\r\n\r\n") + 4; // +4 so the end of headers is the end of string
 
 
   /* parse request to get file name */
@@ -201,7 +200,7 @@ int handle_connection(int sock2)
     do_file: // not sure what this is
     fp = fopen( filename, "r" );
     
-
+    char * ich;
     while ( ( ich = getc( fp ) ) != EOF && pos < MAXFILESIZE) {
       filecontent[pos] = ich;
       pos ++;
