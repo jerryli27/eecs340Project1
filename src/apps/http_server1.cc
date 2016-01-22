@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <iostream>
 
 #define BUFSIZE 1024
 #define FILENAMESIZE 100
@@ -52,7 +53,7 @@ int main(int argc,char *argv[])
   sock=minet_socket (SOCK_STREAM);
 
 
-  sock2=minet_socket (SOCK_STREAM);
+  //sock2=minet_socket (SOCK_STREAM);
   
 
   /* set server address*/
@@ -64,9 +65,9 @@ int main(int argc,char *argv[])
   sa.sin_addr.s_addr = INADDR_ANY;
 
 
-  sa2.sin_family = AF_INET;
-  sa2.sin_port = htons(server_port);
-  sa2.sin_addr.s_addr = INADDR_ANY;
+  //sa2.sin_family = AF_INET;
+  //sa2.sin_port = htons(server_port);
+  //sa2.sin_addr.s_addr = INADDR_ANY;
 
 
   /* bind listening socket */
@@ -81,7 +82,7 @@ int main(int argc,char *argv[])
    * using minet_socket().
    */
 
-  minet_bind (sock2,&sa2);
+  //minet_bind (sock2,&sa2);
 
 
   /* start listening */
@@ -89,7 +90,7 @@ int main(int argc,char *argv[])
 
 
 
-  minet_listen(sock2,backlog2);
+  //minet_listen(sock2,backlog2);
 
 
 
@@ -114,12 +115,13 @@ int main(int argc,char *argv[])
      * accept more connections.  The original socket socket, remains open.
      */
 
-    sock2 = minet_accept(sock2,&sa2);
+    sock2 = minet_accept(sock,&sa);
 
 
 
     rc = handle_connection(sock2);
   }
+  minet_close(sock);
 }
 
 int handle_connection(int sock2)
@@ -150,29 +152,28 @@ int handle_connection(int sock2)
 
 
 
-
   /* first read loop -- get request and headers*/
 
 
   memset(buf, 0, sizeof(buf));
 
-  while((rc = minet_read(sock2, buf, BUFSIZE)) > 0){
+  //while((rc = minet_read(sock2, buf, BUFSIZE)) > 0){
 
     // header: after first \r\n
     // end of header: \r\n\r\n
     
-    datalen = datalen + rc; // not sure why it is useful
-
     // The assumption was that if it can read one byte, 
     // it can read everything. So I'm going to set header
     // after this loop
-  }
+  //}
+  rc = minet_read(sock2, buf, BUFSIZE);
+
 
   // I'll use bptr to denote the start of file address
   bptr = buf + 5;
   headers = strstr(buf, "\r\n") + 2; // +2 because header is after this token
   endheaders = strstr(buf, "\r\n\r\n") + 4; // +4 so the end of headers is the end of string
-
+  
 
   /* parse request to get file name */
   /* Assumption: this is a GET request and filename contains no spaces*/
@@ -182,12 +183,10 @@ int handle_connection(int sock2)
   // the first '/' will be skipped
 
   memset(filename, '\0', sizeof(filename));
-  memset(filecontent, '\0', sizeof(filecontent));
+ // memset(filecontent, '\0', sizeof(filecontent));
 
   addresslength = (int)(strstr(buf + 5, " ") - (buf + 5));
-  memcpy(filename, buf, addresslength);
-  filename[addresslength] = '\0';
-
+  memcpy(filename, buf + 5, addresslength);
 
 
     /* try opening the file */
@@ -197,7 +196,6 @@ int handle_connection(int sock2)
     ok = false;
   } else {
 
-    do_file: // not sure what this is
     fp = fopen( filename, "r" );
     
     int ich;
@@ -205,7 +203,9 @@ int handle_connection(int sock2)
       filecontent[pos] = (char)ich;
       pos ++;
     }
-
+    //filecontent[pos] = '\r';
+    //filecontent[pos + 1] = '\n';
+    //pos += 2;
   }
 
 
@@ -216,9 +216,26 @@ int handle_connection(int sock2)
   {
     /* send headers */
     sprintf(ok_response,ok_response_f, pos - 1);
-    minet_write(sock2, ok_response, sizeof(ok_response));
+    char output[MAXFILESIZE+1];
+    memset(output, '\0', sizeof(output));
+    size_t tempPos = 0;
+    size_t oksize = sizeof(ok_response);
+    for (size_t i = 0; ok_response[i] != '\0' ; i ++ ) {
+        output[tempPos] = ok_response[i];
+        tempPos ++;
+    }
+    //output[tempPos] = '\r';
+    //output[tempPos] = '\n';
+    //tempPos += 2;
+    for (size_t i = 0; i < pos ; i ++ ) {
+        output[tempPos] = filecontent[i];
+        tempPos ++;
+    }
+
+    //minet_write(sock2, ok_response, sizeof(ok_response));
+    minet_write(sock2, output, tempPos);//ok_response, sizeof(ok_response));
     /* send file */
-    minet_write(sock2, filecontent, pos-1);
+    //minet_write(sock2, filecontent, pos - 1);
   }
   else // send error response
   {
