@@ -42,12 +42,12 @@ int main(int argc,char *argv[])
 
   /* initialize and make socket */
   if (toupper(*(argv[1])) == 'K') { 
-  minet_init(MINET_KERNEL);
+    minet_init(MINET_KERNEL);
   } else if (toupper(*(argv[1])) == 'U') { 
-  minet_init(MINET_USER);
+    minet_init(MINET_USER);
   } else {
-  fprintf(stderr, "First argument must be k or u\n");
-  exit(-1);
+    fprintf(stderr, "First argument must be k or u\n");
+    exit(-1);
   }
 
   /* create socket */
@@ -90,28 +90,37 @@ int main(int argc,char *argv[])
   minet_listen(sock,backlog);
   //minet_listen(sock2,backlog2);
 
+  // initialize the list of open connections to empty
+  FD_ZERO(&connections);
 
   /* connection handling loop */
   while(1)
   {
+    //i = minet_accept(sock,&sa);
+
     /* create read list */
+    FD_COPY(&connections, &readlist);
+    FD_SET(sock, &readlist);
 
     /* do a select */
+    i = minet_select(sock, &readlist, NULL, NULL, NULL, NULL);  //timeout=NULL?
 
     /* process sockets that are ready */
-
-    i = minet_accept(sock,&sa);
 
       /* for the accept socket, add accepted connection to connections */
       if (i == sock)
       {
+        sock2 = minet_accept(i, &sa);
+        FD_SET(sock2, &connections);
       }
       else /* for a connection socket, handle the connection */
       {
-	rc = handle_connection(i);
+	      rc = handle_connection(i);
+        FD_CLR(i, &connections);
       }
   }
-  minet_close(i);
+  minet_close(sock);
+
 }
 
 
