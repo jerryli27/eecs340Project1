@@ -92,6 +92,7 @@ int main(int argc,char *argv[])
 
   // initialize the list of open connections to empty
   FD_ZERO(&connections);
+  maxfd = sock;
 
   /* connection handling loop */
   while(1)
@@ -99,25 +100,40 @@ int main(int argc,char *argv[])
     //i = minet_accept(sock,&sa);
 
     /* create read list */
-    FD_COPY(&connections, &readlist);
+    //FD_COPY(&connections, &readlist);
+    readlist = connections;
     FD_SET(sock, &readlist);
 
+	//printf ("entering select\n");
+
     /* do a select */
-    i = minet_select(sock, &readlist, NULL, NULL, NULL, NULL);  //timeout=NULL?
+
+    i = minet_select(maxfd+1, &readlist, 0, 0, 0);  //timeout=NULL?
+	//printf("select is returned with sock = %d, i = %d\n", sock, i);
 
     /* process sockets that are ready */
+    for (i = 0; i < maxfd+1; i++) {
+
+      if (!FD_ISSET(i, &readlist))
+	continue;
 
       /* for the accept socket, add accepted connection to connections */
       if (i == sock)
       {
         sock2 = minet_accept(i, &sa);
+	//printf("sock2 %d is accepted. \n", sock2);
         FD_SET(sock2, &connections);
+	if (sock2 > maxfd)
+		maxfd = sock2;
       }
       else /* for a connection socket, handle the connection */
       {
-	      rc = handle_connection(i);
+	//printf("handling connection of i = %d \n", i);
+	rc = handle_connection(i);
         FD_CLR(i, &connections);
       }
+
+    }
   }
   minet_close(sock);
 
